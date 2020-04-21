@@ -1,0 +1,100 @@
+#include "msp430.h"                     ; #define controlled include file
+
+        NAME    main                    ; module name
+
+ORG 0x3010
+mystr DW 0x0001
+      DW 0x0004
+      DW 0x0002
+      DW 0x0003
+      DW 0x0005
+      DW 0x0008
+      DW 0x0006
+      DW 0x0007
+      DW 0x0009
+      DW 0x0011
+      DW 0x0012
+      DW 0x0010
+      DW 0x0015
+      DW 0x0013
+      DW 0x0014
+      
+        PUBLIC  main                    ; make the main label vissible
+                                        ; outside this module
+        ORG     0FFFEh
+        DC16    init                    ; set reset vector to 'init' label
+
+        RSEG    CSTACK                  ; pre-declaration of segment
+        RSEG    CODE                    ; place program in 'CODE' segment
+
+init:   MOV     #SFE(CSTACK), SP        ; set up stack
+
+main:   NOP                             ; main program
+        MOV.W   #WDTPW+WDTHOLD,&WDTCTL  ; Stop watchdog timer
+
+          CLR.W   R5
+          
+      L5: MOV.W   0x3010(R5),R6
+          MOV.W   0x4020(R5),R7   
+          MOV.W   R7,0x3010(R5)     
+          MOV.W   R6,0x4020(R5)
+          INCD    R5                     ; increment R5 two times for to get the even address
+          CMP    #0x0030,R5
+          JNE    L5
+           
+          CALL #XYZ
+    
+       L4: CLR R5
+            CLR R9
+            MOV.W #0x0014,R10      ; total of of elements -1 
+            
+       L3: MOV.W 0x3010(R5),R6          ;move first number to R6
+            INCD R5                     ;increment R5
+            CMP 0x3010(R5),R6           ;comparing  with the second value (SET FLAG)
+            JNC L1                      ;if greater than jump to L1
+            JNE L2                      ;if less than jump to L2
+            JMP L1                      ;orelse jump to L1 by default
+            
+       L2: MOV.W 0x3010(R5),R7          ;exchange the value
+            DECD R5                     ;decrement R5
+            MOV.W R7,0x3010(R5)         ;place small value first
+            INCD R5                     ;incremnet R5
+            MOV.W R6,0x3010(R5)
+            MOV.W #0x0001,R9            ;set R9
+          
+       L1: DEC R10                      ;number of elements count
+            CMP #0x0000,R10             ;check if all elements are done
+            JNE L3                      ;jump if not equal
+            CMP #0x0000,R9              ;to check if already exchanged
+            JNE L4                      ;if equal jump to L4  
+
+XYZ: LOOP4: CLR R5
+            CLR R9
+            MOV.W #0x0014,R10      ; total of of elements -1 
+            
+       LOOP3: MOV.W 0x4020(R5),R6          ;move first number to R6
+            INCD R5                     ;increment R5
+            CMP 0x4020(R5),R6           ;comparing  with the second value (SET FLAG)
+            JC LOOP1                      ;if greater than jump to L1
+            JNE LOOP2                      ;if less than jump to L2
+            JMP LOOP1                      ;orelse jump to L1 by default
+            
+       LOOP2: MOV.W 0x4020(R5),R7          ;exchange the value
+            DECD R5                     ;decrement R5
+            MOV.W R7,0x4020(R5)         ;place small value first
+            INCD R5                     ;incremnet R5
+            MOV.W R6,0x4020(R5)
+            MOV.W #0x0001,R9            ;set R9
+          
+       LOOP1: DEC R10                      ;number of elements count
+            CMP #0x0000,R10             ;check if all elements are done
+            JNE LOOP3                     ;jump if not equal
+            CMP #0x0000,R9              ;to check if already exchanged
+            JNE LOOP4                     ;if equal jump to L4  
+            
+            RET 
+            END
+       
+       JMP $                           ; jump to current location '$'
+                                        ; (endless loop)
+        END
